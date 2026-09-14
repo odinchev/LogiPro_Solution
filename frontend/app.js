@@ -32,7 +32,6 @@ const elements = {
   questionForm: document.querySelector("#question-form"),
   modelInput: document.querySelector("#llm-model"),
   ollamaStatusBadge: document.querySelector("#ollama-status-badge"),
-  modelHelp: document.querySelector("#model-help"),
   question: document.querySelector("#question"),
   askButton: document.querySelector("#ask-button"),
   queryMessage: document.querySelector("#query-message"),
@@ -58,7 +57,7 @@ async function initLlmStatus() {
     const response = await fetch("/api/llm/status");
     const payload = await readJson(response);
     if (!response.ok) {
-      setOllamaUnavailable("Ollama unreachable (mock fallback)");
+      setOllamaUnavailable("Ollama unreachable");
       return;
     }
     if (payload.default_model && elements.modelInput.value === "llama3.2") {
@@ -66,30 +65,25 @@ async function initLlmStatus() {
     }
     if (payload.ollama_available) {
       state.ollamaAvailable = true;
-      elements.ollamaStatusBadge.textContent = "Ollama active";
+      elements.ollamaStatusBadge.textContent = "Active";
       elements.ollamaStatusBadge.className = "ollama-badge ollama-online";
-      elements.modelHelp.textContent =
-        "Ollama is running. You can specify any locally installed Ollama model.";
-      if (!elements.qaFieldset.disabled) {
-        elements.modelInput.disabled = false;
-      }
+      elements.ollamaStatusBadge.title = `Ollama active. Using model: ${elements.modelInput.value}`;
+      elements.modelInput.disabled = false;
     } else {
       setOllamaUnavailable(
-        payload.mode === "mock"
-          ? "Mock mode enabled"
-          : "Ollama not running (mock fallback active)"
+        payload.mode === "mock" ? "Mock mode" : "Offline (Mock)"
       );
     }
   } catch (error) {
-    setOllamaUnavailable("Ollama not detected (mock fallback active)");
+    setOllamaUnavailable("Offline (Mock)");
   }
 }
 
-function setOllamaUnavailable(reasonText) {
+function setOllamaUnavailable(badgeText) {
   state.ollamaAvailable = false;
-  elements.ollamaStatusBadge.textContent = "Offline (Mock)";
+  elements.ollamaStatusBadge.textContent = badgeText;
   elements.ollamaStatusBadge.className = "ollama-badge ollama-offline";
-  elements.modelHelp.textContent = reasonText;
+  elements.ollamaStatusBadge.title = "Ollama is not running. Mock fallback will be used.";
   elements.modelInput.disabled = true;
 }
 
@@ -342,9 +336,6 @@ function unlockQa() {
   elements.qaLock.textContent = "Ready";
   elements.qaLock.classList.add("unlocked");
   elements.qaEmpty.hidden = true;
-  if (state.ollamaAvailable) {
-    elements.modelInput.disabled = false;
-  }
   elements.question.focus();
 }
 
@@ -353,7 +344,6 @@ function lockQa() {
   elements.qaLock.textContent = "Locked";
   elements.qaLock.classList.remove("unlocked");
   elements.qaEmpty.hidden = false;
-  elements.modelInput.disabled = true;
 }
 
 function setStatus(status) {

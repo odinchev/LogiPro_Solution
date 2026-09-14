@@ -101,6 +101,51 @@ footer {
   font-size: 0.84rem;
 }
 
+.nav-llm-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 4px 10px 4px 12px;
+}
+
+.nav-llm-label {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.nav-llm-group input[type="text"] {
+  width: 130px;
+  height: 30px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #c9d3e0;
+  border-radius: 6px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.nav-llm-group input[type="text"]:focus {
+  outline: none;
+  border-color: #3f6f9d;
+  box-shadow: 0 0 0 2px rgba(63, 111, 157, 0.2);
+}
+
+.nav-llm-group input[type="text"]:disabled {
+  background: #f1f3f6;
+  color: #8c97a8;
+  border-color: #dce1e8;
+  cursor: not-allowed;
+}
+
 .header-links a {
   color: var(--navy);
   font-weight: 650;
@@ -452,22 +497,6 @@ fieldset:disabled {
   font-weight: 750;
 }
 
-.model-select-group {
-  margin-bottom: 18px;
-}
-
-.model-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 7px;
-}
-
-.model-label-row label {
-  margin-bottom: 0 !important;
-}
-
 .ollama-badge {
   display: inline-flex;
   align-items: center;
@@ -500,33 +529,6 @@ fieldset:disabled {
 .ollama-checking {
   color: var(--muted);
   background: #edf0f4;
-}
-
-input[type="text"] {
-  width: 100%;
-  height: 42px;
-  padding: 8px 12px;
-  color: var(--ink);
-  background: white;
-  border: 1px solid #bfc8d5;
-  border-radius: 10px;
-  font: inherit;
-  font-size: 0.88rem;
-  transition: border-color 150ms ease, background 150ms ease;
-}
-
-input[type="text"]:disabled {
-  background: var(--surface-soft);
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-.model-help {
-  display: block;
-  margin-top: 5px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.4;
 }
 
 textarea {
@@ -742,6 +744,10 @@ footer {
   .header-links a,
   .local-pill {
     display: none;
+  }
+
+  .nav-llm-group input[type="text"] {
+    width: 95px;
   }
 
   .card {
