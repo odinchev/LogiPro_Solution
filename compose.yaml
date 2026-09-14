@@ -5,15 +5,15 @@ services:
       dockerfile: Dockerfile
     container_name: logipro-document-intelligence
     environment:
-      LOGIPRO_ENVIRONMENT: development
+      LOGIPRO_ENVIRONMENT: ${LOGIPRO_ENVIRONMENT:-development}
       LOGIPRO_DATA_DIR: /app/data
-      LOGIPRO_EMBEDDING_DEVICE: cpu
-      LOGIPRO_LLM_MODE: auto
-      LOGIPRO_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      LOGIPRO_EMBEDDING_DEVICE: ${LOGIPRO_EMBEDDING_DEVICE:-cpu}
+      LOGIPRO_LLM_MODE: ${LOGIPRO_LLM_MODE:-auto}
+      LOGIPRO_OLLAMA_BASE_URL: ${LOGIPRO_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
     ports:
-      - "8000:8000"
+      - "${HOST_PORT:-8000}:8000"
     volumes:
-      - ./data:/app/data
+      - "${HOST_DATA_DIR:-./data}:/app/data"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
