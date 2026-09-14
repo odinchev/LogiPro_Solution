@@ -75,13 +75,18 @@ To transition this single-container prototype into an enterprise-grade productio
    - Add state reconciliation workers that identify and retry stale `PROCESSING` jobs.
    - Introduce OpenTelemetry distributed tracing across API, message queue, and OCR tasks.
 
-## AI Assistants
+## AI Agents & Development Process
 
-This project was architected, scaffolded, and iteratively implemented using **Cline** (AI coding agent in VS Code) utilizing:
-- **GPT 5.6 SOL**: System architecture design, service-layer separation, and design decisions.
-- **Gemini flash 3.8**: Rapid implementation, test generation, text normalization, and iterative bug fixing.
+In accordance with the project instructions, this service was architected, scaffolded, and iteratively implemented in collaboration with **Cline** (AI coding agent in VS Code). Development was driven systematically across discrete milestones: system architecture, database state management, asynchronous OCR/chunking pipelines, RAG retrieval with citations, and frontend user workflows.
 
-Complete conversation logs, prompts, and architectural decisions are catalogued in the [`ai_logs`](./ai_logs/) directory.
+**Models Utilized:**
+- **GPT 5.6 SOL**: Initial system architecture design, service-layer separation, and design decisions.
+- **Gemini flash 3.8**: Rapid implementation, test suite generation, text normalization, and iterative bug fixing.
+
+**Audit & Conversation Records:**
+- Human-readable transcript: [`ai_logs/AI_CONVERSATION.md`](./ai_logs/AI_CONVERSATION.md)
+- Raw execution payloads & tool traces: [`ai_logs/cline_logs.json`](./ai_logs/cline_logs.json)
+- Additional methodology notes: [`ai_logs/README.md`](./ai_logs/README.md)
 
 ## Implemented milestones
 
@@ -295,7 +300,3 @@ The supplied image installs Tesseract's English language data. To use another
 > after the response. They are not a durable job queue. Restarting the container
 > during ingestion can leave a document in `PROCESSING`; a production deployment
 > should add stale-job recovery or a durable worker queue.
-
-AI Collaboration & Development Process
-In accordance with the project instructions, this service was designed and built in collaboration with Cline. Development was driven systematically across discrete milestones: system architecture, database state management, asynchronous OCR/chunking pipelines, RAG retrieval with citations, and frontend user workflows.
-A human-readable conversation transcript is documented in ai_logs/AI_CONVERSATION.md, with full raw execution payloads retained in ai_logs/cline_logs.json.
