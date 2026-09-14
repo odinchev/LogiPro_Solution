@@ -1,6 +1,6 @@
 """Pydantic API contracts for the Document Intelligence Service."""
 
-from app.schemas.common import HealthResponse, ServiceInfoResponse
+from app.schemas.common import HealthResponse, LlmStatusResponse, ServiceInfoResponse
 from app.schemas.document import (
     DocumentStatus,
     DocumentStatusResponse,
@@ -14,6 +14,7 @@ __all__ = [
     "DocumentStatusResponse",
     "DocumentUploadResponse",
     "HealthResponse",
+    "LlmStatusResponse",
     "QueryRequest",
     "QueryResponse",
     "ServiceInfoResponse",

@@ -141,3 +141,86 @@ def test_ollama_success_uses_chat_api_and_numbered_context(monkeypatch) -> None:
     user_content = payload["messages"][1]["content"]
     assert "[1] Page 2 (shipment.pdf)" in user_content
     assert "[2] Page 3 (shipment.pdf)" in user_content
+
+
+def test_ollama_custom_model_override(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, object]:
+            return {
+                "message": {
+                    "role": "assistant",
+                    "content": "Custom model answer.",
+                }
+            }
+
+    class FakeClient:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def post(self, path: str, *, json: dict[str, object]) -> FakeResponse:
+            captured["payload"] = json
+            return FakeResponse()
+
+    monkeypatch.setattr(
+        "app.services.answer_generation_service.httpx.Client",
+        FakeClient,
+    )
+
+    result = generator("auto").generate(
+        question="What is the cargo?",
+        chunks=chunks(),
+        model="mistral:7b",
+    )
+
+    assert result.provider == "ollama:mistral:7b"
+    assert captured["payload"]["model"] == "mistral:7b"
+
+
+def test_ollama_is_available_ping(monkeypatch) -> None:
+    gen = generator("auto")
+
+    class FakeResponseOk:
+        is_success = True
+
+    class FakeClientOk:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            pass
+
+        def get(self, path: str) -> FakeResponseOk:
+            return FakeResponseOk()
+
+    monkeypatch.setattr("app.services.answer_generation_service.httpx.Client", FakeClientOk)
+    assert gen.is_available() is True
+
+    class FakeClientFail:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            pass
+
+        def get(self, path: str):
+            raise httpx.ConnectError("down")
+
+    monkeypatch.setattr("app.services.answer_generation_service.httpx.Client", FakeClientFail)
+    assert gen.is_available() is False

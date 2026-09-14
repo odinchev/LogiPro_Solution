@@ -65,6 +65,7 @@ class RagService:
         generated = self._answer_generator.generate(
             question=request.question,
             chunks=chunks,
+            model=request.model,
         )
         return QueryResponse(
             document_id=document.id,

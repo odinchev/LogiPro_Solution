@@ -27,3 +27,11 @@ class ServiceInfoResponse(BaseModel):
     version: str
     environment: str
     docs_url: str
+
+
+class LlmStatusResponse(BaseModel):
+    """Runtime availability and configuration for the local LLM."""
+
+    ollama_available: bool
+    default_model: str
+    mode: str

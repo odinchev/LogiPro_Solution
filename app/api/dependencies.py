@@ -26,3 +26,8 @@ def get_document_processor(request: Request) -> DocumentProcessor:
 def get_rag_service(request: Request) -> RagService:
     """Provide the retrieval-augmented generation service."""
     return request.app.state.rag_service
+
+
+def get_answer_generator(request: Request):
+    """Provide the answer generator service."""
+    return getattr(request.app.state, "answer_generator", None)

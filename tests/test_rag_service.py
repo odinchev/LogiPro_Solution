@@ -51,15 +51,16 @@ class RecordingVectorStore:
 
 class RecordingAnswerGenerator:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, list[RetrievedChunk]]] = []
+        self.calls: list[tuple[str, list[RetrievedChunk], str | None]] = []
 
     def generate(
         self,
         *,
         question: str,
         chunks: list[RetrievedChunk],
+        model: str | None = None,
     ) -> GeneratedAnswer:
-        self.calls.append((question, chunks))
+        self.calls.append((question, chunks, model))
         return GeneratedAnswer("The gross weight is 2500 kg [1].", "mock", True)
 
 
@@ -156,7 +157,7 @@ def test_query_returns_answer_and_page_citations() -> None:
 
     assert embeddings.texts == ["What is the weight?"]
     assert vectors.searches == [(document.id, [0.25, 0.75], 2)]
-    assert answers.calls == [("What is the weight?", chunks)]
+    assert answers.calls == [("What is the weight?", chunks, None)]
     assert result.answer == "The gross weight is 2500 kg [1]."
     assert result.llm_provider == "mock"
     assert result.used_fallback is True
@@ -176,3 +177,25 @@ def test_query_rejects_ready_document_without_context() -> None:
         )
 
     assert answers.calls == []
+
+
+def test_query_forwards_custom_model_to_answer_generator() -> None:
+    document = document_with_status(DocumentStatus.READY)
+    chunks = [
+        RetrievedChunk(
+            id=f"{document.id}:p0001:c0000",
+            text="Weight: 100 kg",
+            page_number=1,
+            filename=document.filename,
+            relevance_score=0.95,
+        ),
+    ]
+    service, _, _, answers = build_service(document, chunks)
+    request = QueryRequest(
+        question="What is the weight?",
+        model="custom-model:latest",
+    )
+
+    service.query_document(document_id=document.id, request=request)
+
+    assert answers.calls == [("What is the weight?", chunks, "custom-model:latest")]

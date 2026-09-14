@@ -19,8 +19,13 @@ class AnswerGenerator(Protocol):
         *,
         question: str,
         chunks: list[RetrievedChunk],
+        model: str | None = None,
     ) -> GeneratedAnswer:
         """Return a grounded answer and provider metadata."""
+        ...
+
+    def is_available(self) -> bool:
+        """Check whether the underlying LLM provider is reachable."""
         ...
 
 
@@ -50,18 +55,34 @@ class OllamaAnswerGenerator:
         self._temperature = temperature
         self._max_tokens = max_tokens
 
+    def is_available(self) -> bool:
+        """Check if Ollama is currently running and reachable."""
+        if self._mode == "mock":
+            return False
+        try:
+            with httpx.Client(base_url=self._base_url, timeout=1.0) as client:
+                res = client.get("/api/tags")
+                return res.is_success
+        except Exception:
+            return False
+
     def generate(
         self,
         *,
         question: str,
         chunks: list[RetrievedChunk],
+        model: str | None = None,
     ) -> GeneratedAnswer:
         """Generate with Ollama, or return an immediate grounded fallback."""
         if self._mode == "mock":
             return self._mock_answer(chunks)
 
         try:
-            return self._generate_with_ollama(question=question, chunks=chunks)
+            return self._generate_with_ollama(
+                question=question,
+                chunks=chunks,
+                model=model,
+            )
         except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
             logger.warning("Ollama answer generation failed: %s", exc)
             if self._mode == "ollama":
@@ -75,13 +96,15 @@ class OllamaAnswerGenerator:
         *,
         question: str,
         chunks: list[RetrievedChunk],
+        model: str | None = None,
     ) -> GeneratedAnswer:
+        effective_model = (model.strip() if model and model.strip() else None) or self._model
         context = "\n\n".join(
             f"[{index}] Page {chunk.page_number} ({chunk.filename})\n{chunk.text}"
             for index, chunk in enumerate(chunks, start=1)
         )
         payload = {
-            "model": self._model,
+            "model": effective_model,
             "stream": False,
             "messages": [
                 {
@@ -114,7 +137,7 @@ class OllamaAnswerGenerator:
             raise ValueError("Ollama returned an empty answer.")
         return GeneratedAnswer(
             text=content,
-            provider=f"ollama:{self._model}",
+            provider=f"ollama:{effective_model}",
             used_fallback=False,
         )
 

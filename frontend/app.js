@@ -30,6 +30,9 @@ const elements = {
   qaLock: document.querySelector("#qa-lock"),
   qaEmpty: document.querySelector("#qa-empty"),
   questionForm: document.querySelector("#question-form"),
+  modelInput: document.querySelector("#llm-model"),
+  ollamaStatusBadge: document.querySelector("#ollama-status-badge"),
+  modelHelp: document.querySelector("#model-help"),
   question: document.querySelector("#question"),
   askButton: document.querySelector("#ask-button"),
   queryMessage: document.querySelector("#query-message"),
@@ -41,12 +44,54 @@ const state = {
   pollTimer: null,
   pollGeneration: 0,
   queryGeneration: 0,
+  ollamaAvailable: false,
 };
 
 elements.fileInput.addEventListener("change", showSelectedFile);
 elements.uploadForm.addEventListener("submit", uploadDocument);
 elements.questionForm.addEventListener("submit", askQuestion);
 window.addEventListener("beforeunload", cancelPolling);
+document.addEventListener("DOMContentLoaded", initLlmStatus);
+
+async function initLlmStatus() {
+  try {
+    const response = await fetch("/api/llm/status");
+    const payload = await readJson(response);
+    if (!response.ok) {
+      setOllamaUnavailable("Ollama unreachable (mock fallback)");
+      return;
+    }
+    if (payload.default_model && elements.modelInput.value === "llama3.2") {
+      elements.modelInput.value = payload.default_model;
+    }
+    if (payload.ollama_available) {
+      state.ollamaAvailable = true;
+      elements.ollamaStatusBadge.textContent = "Ollama active";
+      elements.ollamaStatusBadge.className = "ollama-badge ollama-online";
+      elements.modelHelp.textContent =
+        "Ollama is running. You can specify any locally installed Ollama model.";
+      if (!elements.qaFieldset.disabled) {
+        elements.modelInput.disabled = false;
+      }
+    } else {
+      setOllamaUnavailable(
+        payload.mode === "mock"
+          ? "Mock mode enabled"
+          : "Ollama not running (mock fallback active)"
+      );
+    }
+  } catch (error) {
+    setOllamaUnavailable("Ollama not detected (mock fallback active)");
+  }
+}
+
+function setOllamaUnavailable(reasonText) {
+  state.ollamaAvailable = false;
+  elements.ollamaStatusBadge.textContent = "Offline (Mock)";
+  elements.ollamaStatusBadge.className = "ollama-badge ollama-offline";
+  elements.modelHelp.textContent = reasonText;
+  elements.modelInput.disabled = true;
+}
 
 function showSelectedFile() {
   const file = elements.fileInput.files[0];
@@ -189,13 +234,15 @@ async function askQuestion(event) {
   setButtonBusy(elements.askButton, true, "Thinking…", "Ask question");
   elements.question.disabled = true;
 
+  const model = elements.modelInput.value.trim() || undefined;
+
   try {
     const response = await fetch(
       `/api/documents/${encodeURIComponent(documentId)}/query`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, top_k: TOP_K }),
+        body: JSON.stringify({ question, top_k: TOP_K, model }),
       },
     );
     const payload = await readJson(response);
@@ -295,6 +342,9 @@ function unlockQa() {
   elements.qaLock.textContent = "Ready";
   elements.qaLock.classList.add("unlocked");
   elements.qaEmpty.hidden = true;
+  if (state.ollamaAvailable) {
+    elements.modelInput.disabled = false;
+  }
   elements.question.focus();
 }
 
@@ -303,6 +353,7 @@ function lockQa() {
   elements.qaLock.textContent = "Locked";
   elements.qaLock.classList.remove("unlocked");
   elements.qaEmpty.hidden = false;
+  elements.modelInput.disabled = true;
 }
 
 function setStatus(status) {

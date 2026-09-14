@@ -69,20 +69,21 @@ def create_app(
             embedding_service=embedding_service,
             vector_store=vector_store,
         )
+    answer_generator = OllamaAnswerGenerator(
+        mode=settings.llm_mode,
+        base_url=settings.ollama_base_url,
+        model=settings.ollama_model,
+        connect_timeout_seconds=settings.ollama_connect_timeout_seconds,
+        response_timeout_seconds=settings.ollama_response_timeout_seconds,
+        temperature=settings.ollama_temperature,
+        max_tokens=settings.ollama_max_tokens,
+    )
     if rag_service is None:
         rag_service = RagService(
             repository=document_repository,
             embedding_service=embedding_service,
             vector_store=vector_store,
-            answer_generator=OllamaAnswerGenerator(
-                mode=settings.llm_mode,
-                base_url=settings.ollama_base_url,
-                model=settings.ollama_model,
-                connect_timeout_seconds=settings.ollama_connect_timeout_seconds,
-                response_timeout_seconds=settings.ollama_response_timeout_seconds,
-                temperature=settings.ollama_temperature,
-                max_tokens=settings.ollama_max_tokens,
-            ),
+            answer_generator=answer_generator,
         )
 
     @asynccontextmanager
@@ -109,6 +110,7 @@ def create_app(
     application.state.document_service = document_service
     application.state.document_processor = document_processor
     application.state.rag_service = rag_service
+    application.state.answer_generator = answer_generator
     application.mount(
         "/assets",
         StaticFiles(directory=frontend_dir),

@@ -96,6 +96,7 @@ def test_frontend_is_served_at_root(client: TestClient) -> None:
     assert 'id="upload-form"' in response.text
     assert 'id="status-badge"' in response.text
     assert 'id="qa-fieldset"' in response.text
+    assert 'id="llm-model"' in response.text
     assert 'id="answer-list"' in response.text
     assert "/assets/styles.css" in response.text
     assert "/assets/app.js" in response.text
@@ -128,6 +129,8 @@ def test_frontend_assets_are_served(client: TestClient) -> None:
     assert "window.setTimeout" in script.text
     assert "citation.page_number" in script.text
     assert "citation.relevance_score" in script.text
+    assert "elements.modelInput" in script.text
+    assert "initLlmStatus" in script.text
     assert "innerHTML" not in script.text
 
 
@@ -397,3 +400,44 @@ def test_query_endpoint_maps_required_ollama_failure_to_503(tmp_path: Path) -> N
 
     assert response.status_code == 503
     assert response.json()["detail"] == "Ollama is required but unavailable."
+
+
+def test_llm_status_endpoint(client: TestClient) -> None:
+    response = client.get("/api/llm/status")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "ollama_available" in data
+    assert "default_model" in data
+    assert "mode" in data
+    assert isinstance(data["ollama_available"], bool)
+    assert data["default_model"] == "llama3.2"
+
+
+def test_query_endpoint_accepts_model_in_request_body(tmp_path: Path) -> None:
+    class ModelCapturingQueryService:
+        def query_document(self, *, document_id: UUID, request) -> QueryResponse:
+            return QueryResponse(
+                document_id=document_id,
+                question=request.question,
+                answer=f"Answer using {request.model}",
+                citations=[],
+                llm_provider=f"ollama:{request.model}",
+                used_fallback=False,
+            )
+
+    application = create_app(
+        Settings(environment="testing", data_dir=tmp_path),
+        document_processor=RecordingDocumentProcessor(),
+        rag_service=ModelCapturingQueryService(),
+    )
+    doc_id = uuid4()
+    with TestClient(application) as test_client:
+        response = test_client.post(
+            f"/api/documents/{doc_id}/query",
+            json={"question": "Test question?", "model": "mistral:7b"},
+        )
+
+    assert response.status_code == 200
+    assert response.json()["answer"] == "Answer using mistral:7b"
+    assert response.json()["llm_provider"] == "ollama:mistral:7b"

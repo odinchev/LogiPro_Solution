@@ -107,6 +107,26 @@
           <fieldset id="qa-fieldset" disabled>
             <legend class="sr-only">Ask a question about the ready document</legend>
             <form id="question-form">
+              <div class="model-select-group">
+                <div class="model-label-row">
+                  <label for="llm-model">Ollama model</label>
+                  <span id="ollama-status-badge" class="ollama-badge ollama-checking">Detecting Ollama…</span>
+                </div>
+                <input
+                  id="llm-model"
+                  name="model"
+                  type="text"
+                  value="llama3.2"
+                  placeholder="e.g. llama3.2, mistral, qwen2.5"
+                  autocomplete="off"
+                  spellcheck="false"
+                  disabled
+                >
+                <small id="model-help" class="model-help">
+                  Checking if Ollama is running locally…
+                </small>
+              </div>
+
               <label for="question">Question</label>
               <textarea
                 id="question"

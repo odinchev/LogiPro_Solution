@@ -452,6 +452,83 @@ fieldset:disabled {
   font-weight: 750;
 }
 
+.model-select-group {
+  margin-bottom: 18px;
+}
+
+.model-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
+.model-label-row label {
+  margin-bottom: 0 !important;
+}
+
+.ollama-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ollama-badge::before {
+  width: 6px;
+  height: 6px;
+  content: "";
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.ollama-online {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.ollama-offline {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.ollama-checking {
+  color: var(--muted);
+  background: #edf0f4;
+}
+
+input[type="text"] {
+  width: 100%;
+  height: 42px;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: white;
+  border: 1px solid #bfc8d5;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.88rem;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+input[type="text"]:disabled {
+  background: var(--surface-soft);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.model-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 textarea {
   width: 100%;
   min-height: 106px;
