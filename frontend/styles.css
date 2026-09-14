@@ -549,7 +549,7 @@ a:focus-visible,
   margin: 0;
   font-size: 0.94rem;
   line-height: 1.65;
-  white-space: pre-wrap;
+  white-space: normal;
 }
 
 .answer-meta {
@@ -607,7 +607,7 @@ a:focus-visible,
   color: #465267;
   font-size: 0.78rem;
   line-height: 1.5;
-  white-space: pre-wrap;
+  white-space: normal;
 }
 
 .citation-id {

@@ -109,3 +109,32 @@ def test_multiframe_image_uses_ocr_and_retains_frame_numbers(
         (2, "second frame"),
     ]
     assert all(page.extraction_method == "tesseract" for page in pages)
+
+
+def test_normalize_text_collapses_broken_newlines_and_spaces() -> None:
+    service = build_service()
+
+    # Broken word-per-line text
+    word_per_line = "Bill\nof\nlading\nnumber\nABC123\nGross\nweight\n2500 kg"
+    assert (
+        service._normalize_text(word_per_line)
+        == "Bill of lading number ABC123 Gross weight 2500 kg"
+    )
+
+    # Hyphenated line-break
+    hyphenated = "Inter-\nnational ship-\nment and trans-\nportation"
+    assert (
+        service._normalize_text(hyphenated)
+        == "International shipment and transportation"
+    )
+
+    # Paragraph preservation with double newlines
+    paragraphs = "Paragraph one with\nsome broken lines.\n\nParagraph two with\nmore text."
+    assert (
+        service._normalize_text(paragraphs)
+        == "Paragraph one with some broken lines.\n\nParagraph two with more text."
+    )
+
+    # Multiple horizontal whitespaces, tabs, and non-breaking spaces
+    messy_spaces = "Item    code:\tA100\u00a0\u00a0\nQty:   50"
+    assert service._normalize_text(messy_spaces) == "Item code: A100 Qty: 50"

@@ -1,6 +1,7 @@
 """Digital text extraction with page-level Tesseract OCR fallback."""
 
 import logging
+import re
 from pathlib import Path
 from threading import Lock
 
@@ -118,12 +119,25 @@ class TextExtractionService:
 
     @staticmethod
     def _normalize_text(text: str) -> str:
-        return (
-            text.replace("\x00", "")
-            .replace("\r\n", "\n")
-            .replace("\r", "\n")
-            .strip()
-        )
+        if not text:
+            return ""
+        # Remove null bytes and standardize carriage returns
+        cleaned = text.replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n")
+        # Replace non-breaking spaces and tabs with regular spaces
+        cleaned = cleaned.replace("\u00a0", " ").replace("\t", " ")
+        # Split into paragraphs separated by two or more newlines
+        paragraphs = re.split(r"\n{2,}", cleaned)
+        normalized_paragraphs: list[str] = []
+        for para in paragraphs:
+            # Connect hyphenated line-breaks (e.g. "inter-\nnational" -> "international")
+            para = re.sub(r"(\b\w+)-\n+(\w+\b)", r"\1\2", para)
+            # Collapse single newlines within a paragraph into a space
+            para = re.sub(r"\n+", " ", para)
+            # Collapse multiple horizontal whitespace characters into a single space
+            para = re.sub(r"[^\S\n]+", " ", para).strip()
+            if para:
+                normalized_paragraphs.append(para)
+        return "\n\n".join(normalized_paragraphs)
 
     @staticmethod
     def _usable_character_count(text: str) -> int:

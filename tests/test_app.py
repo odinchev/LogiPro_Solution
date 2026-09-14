@@ -118,6 +118,7 @@ def test_frontend_assets_are_served(client: TestClient) -> None:
     assert styles.headers["content-type"].startswith("text/css")
     assert ".status-ready" in styles.text
     assert ".citation-snippet" in styles.text
+    assert "white-space: pre" not in styles.text
 
     assert script.status_code == 200
     assert "javascript" in script.headers["content-type"]
