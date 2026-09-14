@@ -3,6 +3,86 @@
 Local-first prototype for asynchronous extraction and natural-language querying
 of shipping PDFs and images.
 
+## System Architecture
+
+### Component Architecture
+```mermaid
+graph TD
+    UI[Frontend: React or Simple HTML/JS] -->|REST API| Router[FastAPI Routers: /upload, /status, /query]
+    Router --> DocService[Document Service]
+    DocService --> Filesystem[(Local Uploads Storage)]
+    DocService --> DB[(SQLite Metadata Store)]
+    DocService -->|Dispatch Background Task| BG[FastAPI BackgroundTasks Worker]
+    
+    BG --> OCR[OCR Service: pypdf + Tesseract fallback]
+    OCR --> Chunker[Text Chunking & Metadata Service]
+    Chunker --> VectorService[ChromaDB Vector Store]
+    BG -->|Update status to READY| DB
+    
+    Router --> RAGService[RAG / LLM Query Service]
+    RAGService --> VectorService
+    RAGService --> LLM[Local Ollama or Mock Fallback]
+```
+
+### Data Flow & Execution Sequence
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Logistics Analyst
+    participant API as FastAPI Router
+    participant DB as SQLite
+    participant Worker as Background Worker
+    participant OCR as Tesseract / pypdf
+    participant Chroma as ChromaDB
+
+    User->>API: POST /api/documents/upload
+    API->>DB: INSERT document (status = 'PROCESSING')
+    API->>Worker: Dispatch background pipeline
+    API-->>User: 202 Accepted { document_id, status: 'PROCESSING' }
+
+    Worker->>OCR: Extract digital text (fallback to OCR on image pages)
+    OCR-->>Worker: Raw Text
+    Worker->>Worker: Chunk text (500 chars, 50 overlap + page metadata)
+    Worker->>Chroma: Ingest embeddings & page metadata
+    Worker->>DB: UPDATE document (status = 'READY')
+
+    User->>API: GET /api/documents/{id}/status
+    API-->>User: { status: 'READY' }
+```
+
+## Design Decisions & Trade-offs
+
+| Decision | Selected Approach | Trade-off / Rationale |
+| --- | --- | --- |
+| **Task Queue** | **FastAPI `BackgroundTasks`** | Chosen for prototype simplicity and zero-infrastructure overhead. It requires no external message broker (RabbitMQ/Redis) or extra container services. *Trade-off:* Tasks run in-process; unhandled restarts during processing can leave tasks uncompleted. Production should decouple this via Celery. |
+| **Metadata & Vector Storage** | **SQLite + Local ChromaDB** | Embeds cleanly into a single container filesystem (`/app/data`) with zero cloud database dependencies, fast initialization, and straightforward backup via simple volume mounts. *Trade-off:* Single-node scale limits concurrency compared to managed cluster databases. |
+| **Local Embeddings** | **`sentence-transformers/all-MiniLM-L6-v2`** | 100% free, runs entirely offline on CPU/GPU without cloud API keys, and pre-caches in the Docker build to avoid runtime network downloads. *Trade-off:* Moderate inference latency compared to dedicated remote GPU endpoints. |
+| **Text Extraction & OCR** | **`pypdf` with `pypdfium2` / Tesseract OCR fallback** | Prioritizes high-speed digital text parsing via `pypdf`. Automatically falls back to high-fidelity PDF rendering via `pypdfium2` and Tesseract OCR only for scanned/image-heavy pages or frame images. *Trade-off:* CPU-intensive rasterization for very large scanned multi-page documents. |
+
+## Production Scaling Roadmap
+
+To transition this single-container prototype into an enterprise-grade production platform for LogiPro Solutions:
+
+1. **Decoupled Asynchronous Workers (Celery + RabbitMQ)**:
+   - Extract document ingestion, OCR, and embedding generation from FastAPI's in-process background worker into dedicated Celery workers backed by a RabbitMQ broker.
+   - Run heavy OCR and embedding workers on auto-scaling Kubernetes worker nodes with GPU acceleration (NVIDIA TensorRT / CUDA) to process high volumes of shipping manifests simultaneously.
+2. **Enterprise Database & Vector Scaling (PostgreSQL + `pgvector`)**:
+   - Migrate document metadata and embeddings from SQLite and local ChromaDB into PostgreSQL with the `pgvector` extension.
+   - Enables unified ACID transactions, relational joins between document manifests and shipping logistics tables, row-level security, and horizontal read replica scaling.
+3. **Cloud-Native Object Storage (AWS S3 / MinIO)**:
+   - Replace the local filesystem uploads mount with distributed S3-compatible object storage featuring presigned URLs, lifecycle policies, and server-side encryption.
+4. **Resilient Job Recovery & Distributed Tracing**:
+   - Add state reconciliation workers that identify and retry stale `PROCESSING` jobs.
+   - Introduce OpenTelemetry distributed tracing across API, message queue, and OCR tasks.
+
+## AI Assistants
+
+This project was architected, scaffolded, and iteratively implemented using **Cline** (AI coding agent in VS Code) utilizing:
+- **GPT 5.6 SOL**: System architecture design, service-layer separation, and design decisions.
+- **Gemini flash 3.8**: Rapid implementation, test generation, text normalization, and iterative bug fixing.
+
+Complete conversation logs, prompts, and architectural decisions are catalogued in the [`ai_logs`](./ai_logs/) directory.
+
 ## Implemented milestones
 
 The service currently includes:
@@ -67,10 +147,15 @@ so processing does not need to download a model after startup.
 Only documents with status `READY` can be queried. `PROCESSING` and `FAILED`
 documents return `409 Conflict`, and unknown IDs return `404 Not Found`.
 
+The target Ollama model can be configured directly per-request from the input field
+on the right side of the UI navigation bar, or overridden programmatically in the
+JSON request body using the `"model"` field (e.g. `"model": "mistral:7b"`). If omitted,
+it defaults to `LOGIPRO_OLLAMA_MODEL` (`llama3.2`).
+
 ```bash
 curl -X POST http://localhost:8000/api/documents/DOCUMENT_ID/query \
   -H "Content-Type: application/json" \
-  -d '{"question":"What is the gross shipment weight?","top_k":5}'
+  -d '{"question":"What is the gross shipment weight?","top_k":5,"model":"llama3.2"}'
 ```
 
 The response includes the generated answer and the retrieved source chunks:
@@ -210,3 +295,7 @@ The supplied image installs Tesseract's English language data. To use another
 > after the response. They are not a durable job queue. Restarting the container
 > during ingestion can leave a document in `PROCESSING`; a production deployment
 > should add stale-job recovery or a durable worker queue.
+
+AI Collaboration & Development Process
+In accordance with the project instructions, this service was designed and built in collaboration with Cline. Development was driven systematically across discrete milestones: system architecture, database state management, asynchronous OCR/chunking pipelines, RAG retrieval with citations, and frontend user workflows.
+A human-readable conversation transcript is documented in ai_logs/AI_CONVERSATION.md, with full raw execution payloads retained in ai_logs/cline_logs.json.
