@@ -1,0 +1,1 @@
+"""LogiPro Document Intelligence Service application package."""

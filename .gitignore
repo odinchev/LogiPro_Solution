@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+
+# Runtime data
+/data/*
+!/data/uploads/
+!/data/uploads/.gitkeep
+!/data/chroma/
+!/data/chroma/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db

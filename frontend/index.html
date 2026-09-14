@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'"
+    >
+    <meta name="description" content="Upload and query shipping documents locally.">
+    <title>LogiPro Document Intelligence</title>
+    <link rel="stylesheet" href="/assets/styles.css">
+    <script src="/assets/app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="header-inner">
+        <a class="brand" href="/" aria-label="LogiPro Document Intelligence home">
+          <span class="brand-mark" aria-hidden="true">LP</span>
+          <span>
+            <strong>LogiPro</strong>
+            <small>Document Intelligence</small>
+          </span>
+        </a>
+        <nav class="header-links" aria-label="Application links">
+          <a href="/docs">API docs</a>
+          <span class="local-pill">Local-first</span>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Shipping document workspace</p>
+        <h1 id="page-title">Extract facts. Ask questions. Verify every source.</h1>
+        <p class="hero-copy">
+          Upload a PDF or image. LogiPro extracts its text locally, indexes it,
+          and returns answers with page-level evidence.
+        </p>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="card upload-card" aria-labelledby="upload-title">
+          <div class="card-heading">
+            <div>
+              <p class="step-label">Step 1</p>
+              <h2 id="upload-title">Upload document</h2>
+            </div>
+            <span id="status-badge" class="status-badge status-idle">No document</span>
+          </div>
+
+          <form id="upload-form" novalidate>
+            <label class="file-drop" for="document-file">
+              <span class="file-icon" aria-hidden="true">⇧</span>
+              <span class="file-primary">Choose a shipping document</span>
+              <span class="file-secondary">PDF, JPEG, PNG, TIFF, BMP, or WebP</span>
+              <input
+                id="document-file"
+                name="file"
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png,.tif,.tiff,.bmp,.webp,application/pdf,image/jpeg,image/png,image/tiff,image/bmp,image/webp"
+                required
+              >
+            </label>
+
+            <div id="selected-file" class="selected-file" hidden>
+              <span class="selected-file-icon" aria-hidden="true">▤</span>
+              <span class="selected-file-copy">
+                <strong id="selected-file-name"></strong>
+                <small id="selected-file-size"></small>
+              </span>
+            </div>
+
+            <button id="upload-button" class="button button-primary" type="submit">
+              Upload and process
+            </button>
+          </form>
+
+          <div id="document-summary" class="document-summary" hidden>
+            <div>
+              <span>Document</span>
+              <strong id="document-name"></strong>
+            </div>
+            <div>
+              <span>Document ID</span>
+              <code id="document-id"></code>
+            </div>
+          </div>
+
+          <div id="processing-note" class="processing-note" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Extracting text and building the local search index…</span>
+          </div>
+
+          <p id="upload-message" class="message" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="card qa-card" aria-labelledby="qa-title">
+          <div class="card-heading">
+            <div>
+              <p class="step-label">Step 2</p>
+              <h2 id="qa-title">Ask the document</h2>
+            </div>
+            <span id="qa-lock" class="qa-lock">Locked</span>
+          </div>
+
+          <fieldset id="qa-fieldset" disabled>
+            <legend class="sr-only">Ask a question about the ready document</legend>
+            <form id="question-form">
+              <label for="question">Question</label>
+              <textarea
+                id="question"
+                name="question"
+                rows="4"
+                maxlength="2000"
+                placeholder="e.g. What is the gross weight and destination?"
+                required
+              ></textarea>
+              <div class="question-actions">
+                <span>Answers include source evidence</span>
+                <button id="ask-button" class="button button-primary" type="submit">
+                  Ask question
+                </button>
+              </div>
+            </form>
+          </fieldset>
+
+          <div id="qa-empty" class="qa-empty">
+            <span aria-hidden="true">⌁</span>
+            <p>Upload a document and wait for processing to finish.</p>
+          </div>
+
+          <p id="query-message" class="message" role="status" aria-live="polite"></p>
+          <div id="answer-list" class="answer-list" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <footer>
+      <span>LogiPro Solutions</span>
+      <span>Files, OCR, embeddings, and vector search stay local.</span>
+    </footer>
+  </body>
+</html>
